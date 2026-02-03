@@ -421,12 +421,7 @@ class OpenFeatureClient:
 
         # Merge transaction context into evaluation context before creating hook_context
         # This ensures hooks have access to the complete context including transaction context
-        merged_eval_context = (
-            get_evaluation_context()
-            .merge(get_transaction_context())
-            .merge(self.context)
-            .merge(evaluation_context)
-        )
+        merged_eval_context = self.get_merged_evaluation_context(evaluation_context)
 
         client_metadata = self.get_metadata()
         provider_metadata = provider.get_metadata()
@@ -955,6 +950,17 @@ class OpenFeatureClient:
 
     def remove_handler(self, event: ProviderEvent, handler: EventHandler) -> None:
         _event_support.remove_client_handler(self, event, handler)
+    
+    def get_merged_evaluation_context(self, evaluation_context: EvaluationContext = EvaluationContext()) -> EvaluationContext:
+        return (
+            get_evaluation_context()
+            .merge(get_transaction_context())
+            .merge(self.context)
+            .merge(evaluation_context)
+        )
+    
+    def set_evaluation_context(self, evaluation_context: EvaluationContext) -> None:
+        self.context = evaluation_context
 
     def track(
         self,
@@ -975,13 +981,8 @@ class OpenFeatureClient:
 
         if evaluation_context is None:
             evaluation_context = EvaluationContext()
-
-        merged_eval_context = (
-            get_evaluation_context()
-            .merge(get_transaction_context())
-            .merge(self.context)
-            .merge(evaluation_context)
-        )
+        
+        merged_eval_context = self.get_merged_evaluation_context(evaluation_context)
         self.provider.track(
             tracking_event_name, merged_eval_context, tracking_event_details
         )
